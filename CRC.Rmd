@@ -1,0 +1,213 @@
+---
+title: "noBMI"
+author: '[F. Javier Rubio](https://sites.google.com/site/fjavierrubio67/)'
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output: html_document
+---
+
+## R Markdown
+
+
+```{r}
+rm(list=ls())
+# Required packages
+library(survival)
+library(devtools)
+#install_github("davidrusi/mombf")
+library(mombf)
+library(lubridate)
+library(forcats)
+library(glmnet)
+#package.version("mombf")
+
+# Reading the data
+#setwd("/Users/FJRubio/Dropbox/Survival_Comorb/MasterData")
+survdata <- read.csv("CRC.csv", header = TRUE, stringsAsFactors=FALSE)
+head(survdata)
+dim(survdata)
+colnames(survdata)
+
+##################################################################
+# COMPLETE DATA CASES: response variable and design matrix
+##################################################################
+
+# Complete cases (indicate which variables we will include in the analysis only)
+dput(colnames(survdata))
+# index of variables of interest
+ind.v <- c("status", "datainci", "datefoll", "age", "sex", "infarct", 
+           "heart_failure", "vascular_disease", "cerebro_disease", "dementia", 
+           "pulmonary_disease", "connective_disease", "hemiplegia", "renal_disease", 
+           "diabetes", "liver", "stage", "smoker")
+
+survdatac <- survdata[,ind.v]
+dim(survdatac)
+colnames(survdatac)
+
+rm(survdata)
+
+# complete cases of variables of interest
+ind.cc <- complete.cases(survdatac) 
+mean(ind.cc) # completeness proportion
+
+survdatac <- survdatac[ind.cc,]
+dim(survdatac)
+
+# stage as categorical
+survdatac$stage <- factor(survdatac$stage)
+
+dim(survdatac)
+
+
+# Survival times
+survdatac$time <- as.numeric(time_length(interval(dmy(survdatac$datainci), dmy(survdatac$datefoll)), "year"))
+hist(survdatac$time, breaks = 50)
+
+# Vital status (0 - alive, 1 - dead)
+mean(survdatac$status)
+
+# log Survival times and status
+y <- Surv(log(survdatac$time), event=survdatac$status)
+
+# Design matrix (0 - absent, 1 - present)
+colnames(survdatac)
+
+# index containing the variables of interest
+indX <- (1:ncol(survdatac))[!colnames(survdatac)%in%c("status","datainci","datefoll","time")] 
+
+# Design matrix
+X <- survdatac[,indX] 
+
+# Tumour stage as a binary variable
+X$stage <- factor(X$stage)
+
+# Smoking status as a categorical variable
+X$smoker <- factor(X$smoker)
+
+##################################################################################
+# Transforming sex to 0s and 1s
+##################################################################################
+X[,2] <- ifelse(X[,2] == 2, 0,  1) 
+
+# Standardising all dummy variables
+X[,1:(ncol(X)-2)] <- apply(X[,1:(ncol(X)-2)],2,scale) 
+
+
+head(X)
+dim(X)
+
+#####################################################################
+# Bayesian Variable Selection
+#####################################################################
+
+# Priors
+priorCoefz = zellnerprior(taustd=1) # g-prior
+priorCoefm= momprior(taustd=1) # p-mom
+priorGroup= groupzellnerprior(taustd=1)
+
+## LINEAR EFFECTS ##
+####################
+f= formula(paste('y ~ ',paste('X[,',1:ncol(X),']',sep='',collapse="+"),sep=''))
+
+mslinz <- modelSelection(f, priorCoef= priorCoefz, priorDelta= modelbbprior(1,1), priorGroup=priorGroup, 
+                         enumerate=TRUE)
+mslinm <- modelSelection(f, priorCoef= priorCoefm, priorDelta= modelbbprior(1,1), priorGroup=priorGroup, 
+                         enumerate=TRUE)
+
+
+#MARGINAL POSTERIOR INCLUSION PROB FOR Zellner's prior
+margpp.aftz = mslinz$margpp
+pp.aftz= postProb(mslinz)
+margpp.aftz
+head(pp.aftz)
+#MARGINAL POSTERIOR INCLUSION PROB FOR AFT-pMOMZ 
+margpp.aftmom = mslinm$margpp
+pp.aftmom= postProb(mslinm)
+margpp.aftmom
+head(pp.aftmom)
+
+# Order variables by inclusion probability
+new.names <- c("Intercept",head(colnames(X),n=-2), "stage2", "stage3", "stage4", "smoker2", "smoker3")
+
+new.names[order(margpp.aftmom, decreasing = TRUE)]
+
+new.names[order(margpp.aftz, decreasing = TRUE)]
+
+
+cbind(margpp.aftz,margpp.aftmom)
+
+barplot(margpp.aftmom[order(margpp.aftmom, decreasing = FALSE)], main="Inclusion Probability", horiz=TRUE,
+        names.arg = new.names[order(margpp.aftmom, decreasing = FALSE)],las=1, cex.names = 0.5)
+box()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#####################################################################
+# Cox-LASSO (sensitivity analysis)
+#####################################################################
+
+# Survival object with times
+y2 <- Surv(time = survdatac$time, event=survdatac$status)
+
+X2 <- X[,1:(ncol(X)-2)]
+
+smoking <- matrix(0, ncol = 3, nrow = nrow(X))
+colnames(smoking) <- c("smoker 1", "smoker 2", "smoker 3")
+for(i in 1:nrow(X)) smoking[i,X$smoker[i]] <- 1
+
+stag <- matrix(0, ncol = 4, nrow = nrow(X))
+colnames(stag) <- c("stage 1", "stage 2", "stage 3", "stage 4")
+for(i in 1:nrow(X)) stag[i,X$stage[i]] <- 1
+
+X2 <- data.matrix(cbind(X2,stag[,2:4],smoking[,2:3]))
+head(X2)
+
+cv.fit= try(cv.glmnet(x =  X2, y = y2, family="cox", 
+                      maxit=10000, nfolds=10, alpha=1), silent=TRUE)
+fit= try(glmnet(x = X2, y=y2, family = "cox", maxit=10000, alpha=1), silent=TRUE)
+
+# active variables (lambda.min)
+b.coxlasso = as.double(coef(fit, s=cv.fit$lambda.min))
+new.names[-1][which(b.coxlasso!=0)]
+
+# active variables (lambda.1se)
+b2.coxlasso = as.double(coef(fit, s=cv.fit$lambda.1se))
+new.names[-1][which(b2.coxlasso!=0)]
+
+
+#############################################################
+# Survival Random Forest
+#############################################################
+
+
+
+library(randomForestSRC)
+
+df <- data.frame(time = survdatac$time, status = survdatac$status,  X2 = X2)
+
+rf.obj <- rfsrc(Surv(time, status) ~ ., nodesize = 5, importance = TRUE, data = df)
+
+vs.rf <- var.select(object = rf.obj)
+topvars <- vs.rf$topvars
+
+
+# the above is equivalent to
+max.subtree(rf.obj)$topvars
+
+
+# different levels of conservativeness
+var.select(object = rf.obj, conservative = "low")
+var.select(object = rf.obj, conservative = "medium")
+var.select(object = rf.obj, conservative = "high")
+
+```

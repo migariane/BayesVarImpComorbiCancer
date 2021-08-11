@@ -1,4 +1,4 @@
-# Bayesian variable selection and marginal survival modeling: Assessing the most important comorbidities that impact lung and colorectal cancer Survival in Spain   
+# Bayesian variable selection and survival modeling: Assessing the most important comorbidities that impact lung and colorectal cancer Survival in Spain   
 
 Cancer survival represents one of the main quantities of interest in cancer epidemiology. However, the survival of cancer patients can be affected by a number of factors, such as comorbidities, that may interact with the cancer tumour. Moreover, it is of interest to understand how different cancer sites and tumour stages are affected by different comorbidities. Identifying the comorbidities that affect cancer survival is thus of interests as it can be used to identify factors driving the survival of cancer patients. This information can also be used to identify vulnerable groups of patients with comorbidities that may lead to a worst prognosis of cancer. We address these questions and propose a principled selection and evaluation of the effect of comorbidities in the overall survival in cancer patients. In the first step, we apply a consistent Bayesian variable selection method that can be used to identify the comorbidities that predict overall survival. In the second step, we build a general Bayesian survival model that accounts for time-varying effects. In third step, we derive several posterior predictive measures to quantify the effect of individual comorbidities on the population overall survival. The proposed methodology is implemented with a combination of the R packages **mombf** and **rstan**. 
 
@@ -31,7 +31,7 @@ Twitter @WATZILEI
 
 ## Citation    
 You can cite this repository as:  
-Francisco Rubio et al. (2021) Bayesian variable selection and marginal survival modeling: Assessing the most important comorbidities that impact lung and colorectal cancer Survival. GitHub repository, https://github.com/migariane/BayesVarImpComorbiCancer        
+Francisco Rubio et al. (2021) Bayesian variable selection and survival modeling: Assessing the most important comorbidities that impact lung and colorectal cancer Survival in Spain. GitHub repository, https://github.com/migariane/BayesVarImpComorbiCancer        
 
 ## Copyright
 This software is distributed under the GNU license.

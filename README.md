@@ -31,7 +31,7 @@ Twitter @WATZILEI
 
 ## Citation    
 You can cite this repository as:  
-Francisco Rubio et al. (2021) Bayesian variable selection and marginal survival modeling: Assessing the most important comorbidities that impact lung and colorectal cancer Survival. GitHub repository, https://github.com/migariane/BayesVarImpComorbiCancer        
+Francisco Rubio et al. (2021) Bayesian variable selection and marginal survival modeling: Assessing the most important comorbidities that impact lung and colorectal cancer Survival in Spain. GitHub repository, https://github.com/migariane/BayesVarImpComorbiCancer        
 
 ## Copyright
 This software is distributed under the GNU license.

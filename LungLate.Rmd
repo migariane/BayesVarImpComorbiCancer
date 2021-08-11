@@ -1,12 +1,17 @@
 ---
-title: "Lung Late"
-author: '[F. Javier Rubio](https://sites.google.com/site/fjavierrubio67/)'
-date: "`r format(Sys.time(), '%d %B, %Y')`"
-output: html_document
+title: "Lung cancer: Late Stages"
+author: '[F. Javier Rubio](https://sites.google.com/site/fjavierrubio67/), Danilo Alvares, Daniel Redondo-Sanchez and Miguel Angel Luque-Fernandez'
+date: '`r format(Sys.Date(), "%B %d, %Y")`'
+output:
+  html_document:
+    toc: true
+    toc_float: true
 ---
 
-# Bayesian variable selection
-```{r}
+# Data Preparation
+
+
+```{r message=FALSE}
 rm(list=ls())
 # Required packages
 library(survival)
@@ -16,7 +21,6 @@ library(mombf)
 library(lubridate)
 library(forcats)
 library(glmnet)
-#package.version("mombf")
 library(ggplot2)
 library(dplyr)
 
@@ -71,7 +75,8 @@ dim(survdatac)
 
 # Survival times
 survdatac$time <- as.numeric(time_length(interval(dmy(survdatac$datainci), dmy(survdatac$datefoll)), "year"))
-hist(survdatac$time, breaks = 50)
+hist(survdatac$time, breaks = 50, xlab = "time", probability = TRUE, main = "")
+box()
 
 # Vital status (0 - alive, 1 - dead)
 survdatac$status <- as.numeric(survdatac$status - 1)
@@ -99,7 +104,11 @@ X$smoker <- factor(X$smoker, levels = c(3, 1, 2),
 table(X$smoker)
 
 head(X)
+```
 
+# Bayesian variable selection
+
+```{r}
 #####################################################################
 # Bayesian Variable Selection
 #####################################################################
@@ -147,6 +156,8 @@ barplot(margpp.aftmom[order(margpp.aftmom, decreasing = FALSE)], main="Inclusion
         names.arg = new.names[order(margpp.aftmom, decreasing = FALSE)],las=1, cex.names = 0.5)
 box()
 ```
+
+# Plots 
 
 ```{r, fig.width = 12, fig.height = 7}
 margpp.aftmom <- margpp.aftmom[-which(names(margpp.aftmom) == "Intercept")]
@@ -211,34 +222,4 @@ new.names[-1][which(b.coxlasso!=0)]
 # active variables (lambda.1se)
 b2.coxlasso = as.double(coef(fit, s=cv.fit$lambda.1se))
 new.names[-1][which(b2.coxlasso!=0)]
-```
-
-
-# Sensitivity analysis using Survival Random Forest
-
-```{r}
-
-#############################################################
-# Survival Random Forest
-#############################################################
-
-library(randomForestSRC)
-
-df <- data.frame(time = survdatac$time, status = survdatac$status,  X2 = X2)
-
-rf.obj <- rfsrc(Surv(time, status) ~ ., nodesize = 5, importance = TRUE, data = df)
-
-vs.rf <- var.select(object = rf.obj)
-topvars <- vs.rf$topvars
-
-
-# the above is equivalent to
-max.subtree(rf.obj)$topvars
-
-
-# different levels of conservativeness
-var.select(object = rf.obj, conservative = "low")
-var.select(object = rf.obj, conservative = "medium")
-var.select(object = rf.obj, conservative = "high")
-
 ```

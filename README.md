@@ -13,8 +13,8 @@ Danilo Alvares
 Department of Statistics, Pontificia Universidad Catolica de Chile, Macul, Chile  
 Email: dalvares@mat.uc.cl  
 
-Daniel Redondo Sanchez  
-Instituto Biosanitario de Granada, CIBERESP, EASP, Granada, Spain   
+Daniel Redondo-Sanchez  
+Instituto de Investigación Biosanitaria ibs.GRANADA, CIBERESP, EASP. Granada, Spain   
 Email: daniel.redondo.easp@juntadeandalucia.es  
 
 Miguel Angel Luque-Fernandez  
